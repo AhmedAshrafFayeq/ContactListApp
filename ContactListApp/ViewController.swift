@@ -14,7 +14,8 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
-        openDatabase()
+        let db = openDatabase()
+        createContactsTable(db: db)
     }
     
     func openDatabase() -> OpaquePointer? {
@@ -27,6 +28,28 @@ class ViewController: UIViewController {
             print("unable to open db connection")
             return nil
         }
+    }
+    
+    func createContactsTable(db: OpaquePointer?){
+        let createTableString = """
+        CREATE TABLE Contacts(Id INT PRIMARY KEY NOT NULL,
+        Name CHAR(255));
+        """
+        //1
+        var createTableStatement: OpaquePointer?
+        //2
+        if sqlite3_prepare_v2(db, createTableString, -1, &createTableStatement, nil) == SQLITE_OK{
+            //3
+            if sqlite3_step(createTableStatement) == SQLITE_DONE {
+                print("Contacts Table Created")
+            }else {
+                print("Contacts table is not created")
+            }
+        }else {
+            print("Create table statement is not prepared")
+        }
+        //4
+        sqlite3_finalize(createTableStatement)
     }
 }
 
