@@ -16,7 +16,8 @@ class ViewController: UIViewController {
         
         let db = openDatabase()
         //createContactsTable(db: db)
-        insert(id: 1, name: "FAYEQ", db: db)
+        //insert(id: 1, name: "FAYEQ", db: db)
+        query(db: db)
     }
     
     func openDatabase() -> OpaquePointer? {
@@ -72,6 +73,34 @@ class ViewController: UIViewController {
             print("insert statement is not prepared")
         }
         sqlite3_finalize(insertStatement)
+    }
+    
+    func query(db: OpaquePointer?){
+        let queryStatementString = "SELECT * FROM Contacts;"
+        var queryStatement: OpaquePointer?
+        //1
+        if sqlite3_prepare_v2(db, queryStatementString, -1, &queryStatement, nil) == SQLITE_OK{
+            //2
+            if sqlite3_step(queryStatement) == SQLITE_ROW{
+                //3
+                let id = sqlite3_column_int(queryStatement, 0)
+                //4
+                guard let queryResultCol1 = sqlite3_column_text(queryStatement, 1) else{
+                    print("query result is nil")
+                    return
+                }
+                let name = String(cString: queryResultCol1)
+                //5
+                print("Query Result:")
+                print("\(id) | \(name)")
+            }else{
+                print("Query returned no results")
+            }
+        }else{
+            let errorMsg = String(cString: sqlite3_errmsg(db))
+            print("Query is not prepared \(errorMsg)")
+        }
+        sqlite3_finalize(queryStatement)
     }
 }
 
