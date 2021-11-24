@@ -16,8 +16,10 @@ class ViewController: UIViewController {
         
         let db = openDatabase()
         //createContactsTable(db: db)
-        //insert(id: 1, name: "FAYEQ", db: db)
+        //insert(id: 2, name: "Ahmed", db: db)
         query(db: db)
+        delete(db: db)
+        
     }
     
     func openDatabase() -> OpaquePointer? {
@@ -101,6 +103,21 @@ class ViewController: UIViewController {
             print("Query is not prepared \(errorMsg)")
         }
         sqlite3_finalize(queryStatement)
+    }
+    
+    func delete(db: OpaquePointer?){
+        let deleteStatementString = "DELETE FROM Contacts WHERE Id = 2;"
+        var deleteStatment: OpaquePointer?
+        if sqlite3_prepare_v2(db, deleteStatementString, -1, &deleteStatment, nil) == SQLITE_OK{
+            if sqlite3_step(deleteStatment) == SQLITE_DONE{
+                print("Row deleted successfully")
+            }else{
+                print("Couldn't delete row")
+            }
+        }else{
+            print("delete statement couldn't be prepared")
+        }
+        sqlite3_finalize(deleteStatment)
     }
 }
 
