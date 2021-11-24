@@ -15,7 +15,8 @@ class ViewController: UIViewController {
         // Do any additional setup after loading the view.
         
         let db = openDatabase()
-        createContactsTable(db: db)
+        //createContactsTable(db: db)
+        insert(id: 1, name: "FAYEQ", db: db)
     }
     
     func openDatabase() -> OpaquePointer? {
@@ -50,6 +51,27 @@ class ViewController: UIViewController {
         }
         //4
         sqlite3_finalize(createTableStatement)
+    }
+    
+    func insert(id: Int32, name: String, db: OpaquePointer?){
+        let insertStatementString = "INSERT INTO Contacts (Id, Name) VALUES (?, ?);"
+        var insertStatement: OpaquePointer?
+        //1
+        if sqlite3_prepare_v2(db, insertStatementString, -1, &insertStatement, nil) == SQLITE_OK{
+            //2
+            sqlite3_bind_int(insertStatement, 1, id)
+            //3
+            sqlite3_bind_text(insertStatement, 2, name, -1, nil)
+            //4
+            if sqlite3_step(insertStatement) == SQLITE_DONE{
+                print("row successfully inserted")
+            }else{
+                print("couldn't insert row")
+            }
+        }else{
+            print("insert statement is not prepared")
+        }
+        sqlite3_finalize(insertStatement)
     }
 }
 
