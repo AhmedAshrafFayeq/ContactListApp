@@ -9,17 +9,22 @@ import UIKit
 import SQLite3
 
 class ViewController: UIViewController {
+    var db : OpaquePointer?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        setup()
         
-        let db = openDatabase()
         //createContactsTable(db: db)
         //insert(id: 2, name: "Ahmed", db: db)
         query(db: db)
-        delete(db: db)
-        
+//        delete(db: db)
+    }
+    
+    func setup(){
+        db = openDatabase()
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(showAlertController))
     }
     
     func openDatabase() -> OpaquePointer? {
@@ -83,7 +88,7 @@ class ViewController: UIViewController {
         //1
         if sqlite3_prepare_v2(db, queryStatementString, -1, &queryStatement, nil) == SQLITE_OK{
             //2
-            if sqlite3_step(queryStatement) == SQLITE_ROW{
+            while sqlite3_step(queryStatement) == SQLITE_ROW{
                 //3
                 let id = sqlite3_column_int(queryStatement, 0)
                 //4
@@ -95,8 +100,6 @@ class ViewController: UIViewController {
                 //5
                 print("Query Result:")
                 print("\(id) | \(name)")
-            }else{
-                print("Query returned no results")
             }
         }else{
             let errorMsg = String(cString: sqlite3_errmsg(db))
@@ -118,6 +121,28 @@ class ViewController: UIViewController {
             print("delete statement couldn't be prepared")
         }
         sqlite3_finalize(deleteStatment)
+    }
+    
+    @objc func showAlertController(){
+        let addContactAlertController = UIAlertController(title: "Add new contact", message: nil, preferredStyle: .alert)
+        addContactAlertController.addTextField { (tf) in
+            tf.placeholder = "Enter Id"
+        }
+        addContactAlertController.addTextField { (tf) in
+            tf.placeholder = "Enter Name"
+        }
+        let submitButton = UIAlertAction(title: "Submit", style: .default) { [weak self, weak addContactAlertController] action in
+            guard let Id    = addContactAlertController?.textFields?[0].text else { return }
+            guard let name   = addContactAlertController?.textFields?[1].text else { return }
+            print(Id)
+            print(name)
+            guard let idAsInt = Int32(Id) else {return}
+            self?.insert(id: idAsInt, name: name , db: self?.db)
+        }
+        addContactAlertController.addAction(submitButton)
+        present(addContactAlertController, animated: true)
+        
+        
     }
 }
 
