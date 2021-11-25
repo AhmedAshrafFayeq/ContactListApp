@@ -10,21 +10,18 @@ import SQLite3
 
 class ViewController: UITableViewController {
     var db : OpaquePointer?
-    var contacts = [String]()
+    var contactsId  = [Int32]()
+    var contacts    = [String]()
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         setup()
-        
-        //createContactsTable(db: db)
-        //insert(id: 2, name: "Ahmed", db: db)
-//        delete(db: db)
     }
     
     func setup(){
         db = openDatabase()
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(showAlertController))
-        query(db: db)
+        refreshTableView()
     }
     
     func openDatabase() -> OpaquePointer? {
@@ -73,7 +70,7 @@ class ViewController: UITableViewController {
             //4
             if sqlite3_step(insertStatement) == SQLITE_DONE{
                 print("row successfully inserted")
-                self.query(db: db)
+                self.refreshTableView()
             }else{
                 showErrorMsg(msg: "User with this Id already exists")
                 print("couldn't insert row")
@@ -84,9 +81,15 @@ class ViewController: UITableViewController {
         sqlite3_finalize(insertStatement)
     }
     
+    func refreshTableView(){
+        contacts    = []
+        contactsId  = []
+        query(db: db)
+        self.tableView.reloadData()
+    }
+    
     func query(db: OpaquePointer?){
-        contacts = []
-        let queryStatementString = "SELECT * FROM Contacts;"
+        let queryStatementString = "SELECT * FROM Contacts Order By Id;"
         var queryStatement: OpaquePointer?
         //1
         if sqlite3_prepare_v2(db, queryStatementString, -1, &queryStatement, nil) == SQLITE_OK{
@@ -99,11 +102,10 @@ class ViewController: UITableViewController {
                     print("query result is nil")
                     return
                 }
-                let name = String(cString: queryResultCol1)
                 //5
-                contacts.append("\(id)) \(name)")
+                contacts.append(String(cString: queryResultCol1))
+                contactsId.append(id)
             }
-            self.tableView.reloadData()
         }else{
             let errorMsg = String(cString: sqlite3_errmsg(db))
             print("Query is not prepared \(errorMsg)")
@@ -111,17 +113,18 @@ class ViewController: UITableViewController {
         sqlite3_finalize(queryStatement)
     }
     
-    func delete(db: OpaquePointer?){
-        let deleteStatementString = "DELETE FROM Contacts WHERE Id = 2;"
+    func delete(db: OpaquePointer?, Id: Int32){
+        let deleteStatementString = "DELETE FROM Contacts WHERE Id = \(Id);"
         var deleteStatment: OpaquePointer?
         if sqlite3_prepare_v2(db, deleteStatementString, -1, &deleteStatment, nil) == SQLITE_OK{
             if sqlite3_step(deleteStatment) == SQLITE_DONE{
                 print("Row deleted successfully")
+                self.refreshTableView()
             }else{
-                print("Couldn't delete row")
+                showErrorMsg(msg: "Couldn't delete row")
             }
         }else{
-            print("delete statement couldn't be prepared")
+            showErrorMsg(msg: "delete statement couldn't be prepared")
         }
         sqlite3_finalize(deleteStatment)
     }
@@ -136,7 +139,7 @@ class ViewController: UITableViewController {
         }
         let submitButton = UIAlertAction(title: "Submit", style: .default) { [weak self, weak addContactAlertController] action in
             guard let Id    = addContactAlertController?.textFields?[0].text else { return }
-            guard let name   = addContactAlertController?.textFields?[1].text else { return }
+            guard let name  = addContactAlertController?.textFields?[1].text else { return }
             print(Id)
             print(name)
             guard let idAsInt = Int32(Id) else {return}
@@ -163,8 +166,17 @@ class ViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "contactCell")
-        cell?.textLabel?.text = contacts[indexPath.row]
+        cell?.textLabel?.text = "\(contactsId[indexPath.row])) \(contacts[indexPath.row])"
         return cell!
+    }
+    
+    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let deleteAction = UIContextualAction(style: .normal, title: "Delete") { [weak self] (action, view, bool) in
+            //delete action code
+            self?.delete(db: self?.db, Id: self?.contactsId[indexPath.row] ?? 0)
+        }
+        deleteAction.backgroundColor = .red
+        return UISwipeActionsConfiguration(actions: [deleteAction])
     }
     
 }
