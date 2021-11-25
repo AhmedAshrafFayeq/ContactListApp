@@ -8,9 +8,9 @@
 import UIKit
 import SQLite3
 
-class ViewController: UIViewController {
+class ViewController: UITableViewController {
     var db : OpaquePointer?
-
+    var contacts = [String]()
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
@@ -18,13 +18,13 @@ class ViewController: UIViewController {
         
         //createContactsTable(db: db)
         //insert(id: 2, name: "Ahmed", db: db)
-        query(db: db)
 //        delete(db: db)
     }
     
     func setup(){
         db = openDatabase()
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(showAlertController))
+        query(db: db)
     }
     
     func openDatabase() -> OpaquePointer? {
@@ -73,7 +73,9 @@ class ViewController: UIViewController {
             //4
             if sqlite3_step(insertStatement) == SQLITE_DONE{
                 print("row successfully inserted")
+                self.query(db: db)
             }else{
+                showErrorMsg(msg: "User with this Id already exists")
                 print("couldn't insert row")
             }
         }else{
@@ -83,6 +85,7 @@ class ViewController: UIViewController {
     }
     
     func query(db: OpaquePointer?){
+        contacts = []
         let queryStatementString = "SELECT * FROM Contacts;"
         var queryStatement: OpaquePointer?
         //1
@@ -98,9 +101,9 @@ class ViewController: UIViewController {
                 }
                 let name = String(cString: queryResultCol1)
                 //5
-                print("Query Result:")
-                print("\(id) | \(name)")
+                contacts.append("\(id)) \(name)")
             }
+            self.tableView.reloadData()
         }else{
             let errorMsg = String(cString: sqlite3_errmsg(db))
             print("Query is not prepared \(errorMsg)")
@@ -138,11 +141,30 @@ class ViewController: UIViewController {
             print(name)
             guard let idAsInt = Int32(Id) else {return}
             self?.insert(id: idAsInt, name: name , db: self?.db)
+            self?.query(db: self?.db)
         }
         addContactAlertController.addAction(submitButton)
         present(addContactAlertController, animated: true)
-        
-        
     }
+    
+    func showErrorMsg(msg: String){
+        let ac = UIAlertController(title: "Error", message: msg, preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "Ok", style: .default))
+        present(ac, animated: true)
+    }
+    
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        1
+    }
+    
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        contacts.count
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "contactCell")
+        cell?.textLabel?.text = contacts[indexPath.row]
+        return cell!
+    }
+    
 }
-
