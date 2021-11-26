@@ -31,7 +31,7 @@ class ViewController: UITableViewController {
             print("successfully opened connection to db")
             return dbOpaquePointer
         }else {
-            print("unable to open db connection")
+            showErrorMsg(msg: "unable to open db connection")
             return nil
         }
     }
@@ -52,7 +52,7 @@ class ViewController: UITableViewController {
                 print("Contacts table is not created")
             }
         }else {
-            print("Create table statement is not prepared")
+            showErrorMsg(msg: "Create table statement is not prepared")
         }
         //4
         sqlite3_finalize(createTableStatement)
@@ -73,10 +73,9 @@ class ViewController: UITableViewController {
                 self.refreshTableView()
             }else{
                 showErrorMsg(msg: "User with this Id already exists")
-                print("couldn't insert row")
             }
         }else{
-            print("insert statement is not prepared")
+            showErrorMsg(msg: "insert statement is not prepared")
         }
         sqlite3_finalize(insertStatement)
     }
@@ -108,7 +107,7 @@ class ViewController: UITableViewController {
             }
         }else{
             let errorMsg = String(cString: sqlite3_errmsg(db))
-            print("Query is not prepared \(errorMsg)")
+            showErrorMsg(msg: "Query is not prepared \(errorMsg)")
         }
         sqlite3_finalize(queryStatement)
     }
